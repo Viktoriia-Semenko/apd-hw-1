@@ -139,6 +139,37 @@ public struct StudyPlan: Codable, Equatable {
     }
 
     public mutating func importMerging(_ importedItems: [StudyItem]) throws {
-        fatalError("Implement optional bonus")
+        var seenIDs = Set<String>()
+
+        for item in importedItems {
+            if seenIDs.contains(item.id) {
+                throw StudyPlanError.duplicateID(item.id)
+            }
+
+            seenIDs.insert(item.id)
+        }
+
+        var mergedItems = items
+        var indexByID: [String: Int] = [:]
+
+        for (index, item) in items.enumerated() {
+            indexByID[item.id] = index
+        }
+
+        var newItems: [StudyItem] = []
+
+        for item in importedItems {
+            if let index = indexByID[item.id] {
+                mergedItems[index] = item
+            } else {
+                newItems.append(item)
+            }
+        }
+
+        newItems.sort {
+            $0.id < $1.id
+        }
+        mergedItems.append(contentsOf: newItems)
+        self.items = mergedItems
     }
 }

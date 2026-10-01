@@ -192,4 +192,95 @@ final class StudyPlannerStudentTests: XCTestCase {
 
         XCTAssertTrue(plan.items[0].isCompleted)
     }
+    
+    func testImportReplacesExistingItemAtSamePosition() throws {
+        let first = try StudyItem(
+            id: "1",
+            title: "Machine Learning",
+            estimatedMinutes: 20,
+            category: .reading
+        )
+
+        let second = try StudyItem(
+            id: "2",
+            title: "Swift",
+            estimatedMinutes: 30,
+            category: .practice
+        )
+
+        var plan = try StudyPlan(items: [first, second])
+
+        let updated = try StudyItem(
+            id: "1",
+            title: "Updated Machine Learning",
+            estimatedMinutes: 40,
+            category: .project
+        )
+
+        try plan.importMerging([updated])
+
+        XCTAssertEqual(plan.items[0].id, "1")
+        XCTAssertEqual(plan.items[0].title, "Updated Machine Learning")
+        XCTAssertEqual(plan.items[0].estimatedMinutes, 40)
+    }
+    
+    func testImportAppendsNewItemsSortedByID() throws {
+        let existing = try StudyItem(
+            id: "1",
+            title: "Existing",
+            estimatedMinutes: 20,
+            category: .reading
+        )
+
+        var plan = try StudyPlan(items: [existing])
+
+        let fourth = try StudyItem(
+            id: "4",
+            title: "Fourth",
+            estimatedMinutes: 30,
+            category: .practice
+        )
+
+        let second = try StudyItem(
+            id: "2",
+            title: "Second",
+            estimatedMinutes: 40,
+            category: .project
+        )
+
+        try plan.importMerging([fourth, second])
+
+        XCTAssertEqual(plan.items[0].id, "1")
+        XCTAssertEqual(plan.items[1].id, "2")
+        XCTAssertEqual(plan.items[2].id, "4")
+    }
+    
+    func testFailedImportDoesNotChangePlan() throws {
+        let existing = try StudyItem(
+            id: "1",
+            title: "Existing",
+            estimatedMinutes: 20,
+            category: .reading
+        )
+
+        var plan = try StudyPlan(items: [existing])
+        let originalItems = plan.items
+
+        let first = try StudyItem(
+            id: "2",
+            title: "First",
+            estimatedMinutes: 30,
+            category: .practice
+        )
+
+        let duplicate = try StudyItem(
+            id: "2",
+            title: "Duplicate",
+            estimatedMinutes: 40,
+            category: .project
+        )
+
+        XCTAssertThrowsError(try plan.importMerging([first, duplicate]))
+        XCTAssertEqual(plan.items, originalItems)
+    }
 }
